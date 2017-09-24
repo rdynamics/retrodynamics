@@ -1,6 +1,4 @@
-![logo](logo.png)
 # Retro Dynamics
-Retro Dynamics is an attempt to create a component-based game engine in C.
+Retro Dynamics is a GLFW-based game engine written in C. The primary target of Retro Dynamics is games based on pixel art, and as such certain kinds of optimizations can be made (e.g. packing large amounts of sprites in to a single spritesheet).
 
-## Why?
-Mostly just for fun, but it could also be somewhat useful. C can be pretty darn fast when used properly, and "pretty darn fast" would be a great property for a game engine. It's also nice because C is basically the lowest level above assembler, so it's possible that a C based game engine could be utilized by basically any higher-level language.
+Games built with Retro Dynamics are meant to be a single executable file, which means that it relies on certain infrastructure, such as [jot](https://github.com/rdynamics/jot), which is used to pack images into a spritesheet and into, essentially, the executable itself.
