@@ -11,3 +11,7 @@ src/images_diffuse.h
 # "logo" files
 *.xcf
 *.png
+
+# some stuff that is used for development right now
+makefile_
+src/rdtest.c

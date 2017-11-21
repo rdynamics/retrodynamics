@@ -8,6 +8,9 @@ size_t minimum_empty = 0;
 void ent_init(void) {
     /* Start the entity pool with 100 entities */
     zlist_init(entity_pool, 100);
+    for(size_t i = 0; i < zsize(entity_pool); ++i) {
+        entity_pool[i] = NULL;
+    }
 }
 
 void ent_cleanup(void) {
