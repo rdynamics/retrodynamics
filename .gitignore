@@ -1,0 +1,13 @@
+build
+*.exe
+
+# testing file
+src/test.c
+
+# test image files
+src/images_diffuse.c
+src/images_diffuse.h
+
+# "logo" files
+*.xcf
+*.png

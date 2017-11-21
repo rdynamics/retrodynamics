@@ -35,7 +35,8 @@ extern void c_tick(component);
 #define c_to(comp, type)  (c_b(type)*)(comp)
 #define c_new(type) c_init(c_h(type), c_b(type))
 
-#define c_isa(comp, type) (c_tabl(comp) == &c_h(type))
+#define c_type(type) (&c_h(type))
+#define c_isa(comp, type) (c_tabl(comp) == c_type(type))
 
 #define declare_body(name, body) typedef c_b(name) body name
 #define declare_update(name, body)\

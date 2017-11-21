@@ -1,0 +1,8 @@
+#ifndef RETRODYNAMICS
+#define RETRODYNAMICS
+
+#ifdef RD_INTERNAL
+    #error Sanity check failed: Retrodynamics public API is exposing some internal API
+#endif
+
+#endif

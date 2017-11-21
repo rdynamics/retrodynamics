@@ -1,23 +1,35 @@
+# Ccompiler
+CC= gcc
+
+# Source and build paths
 SRC_DIR= ./src
 BUILD_DIR= ./build
 
-SRCS= component.c game.c
+# Source files
+SRCS= main.c window.c loops.c event.c renderer.c glew.c images_diffuse.c vector.c entity.c
 
-OBJS= $(SRCS:%.c=$(BUILD_DIR)/%.o)
+# Object files to build
+OBJS= $(SRCS:%.c=%.o)
 
+# Dependencies for each source
 DEPS= $(OBJS:%.o=$(BUILD_DIR)/%.d)
 
-CFLAGS = -Wall
+# Flags for the compiler
+CFLAGS= -Wall -lglfw3 -lopengl32 -lgdi32 -lpthread -lzgcl
 
-LIB_NAME= retrodyn
+# Default path for make install
+INSTALL_PATH?=/usr/local
+
+# Library name
+LIB_NAME= retrodynamics
 LIB_BUILDNAME= $(LIB_NAME:%=lib%.a)
 
 INSTALL_DIR?=/usr
 LIB_PATH=$(INSTALL_DIR)/lib
 INCLUDE_PATH=$(INSTALL_DIR)/include
 
-$(LIB_BUILDNAME): $(OBJS)
-	ar rcs $(BUILD_DIR)/$(LIB_BUILDNAME) $(OBJS)
+$(LIB_BUILDNAME): $(OBJS:%=$(BUILD_DIR)/%)
+	ar rcs $(BUILD_DIR)/$(LIB_BUILDNAME) $(OBJS:%=$(BUILD_DIR)/%)
 
 -include $(DEPS)
 
