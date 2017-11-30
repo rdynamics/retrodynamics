@@ -30,6 +30,7 @@ entity *ent_new(void) {
     entity *ent = snew(entity);
     
     ent->position = v0();
+    ent->tag = UNTAGGED;
     zlist_init(ent->components, 0);
     
     for(size_t i = minimum_empty; i < zsize(entity_pool); ++i) {
@@ -169,13 +170,69 @@ ent_condition within_radius(vec v, float r) {
     return (ent_condition){ &radius_compatible, &radius_cleanup, data };
 }
 
-void is_not_cleanup(void *data) { }
+void not_entity_cleanup(void *data) { }
 
-int is_not_compatible(entity *e, void *data) {
+int not_entity_compatible(entity *e, void *data) {
     entity *check = (entity*)data;
     return check != e;
 }
 
-ent_condition is_not(entity *e) {
-    return (ent_condition){ &is_not_compatible, &is_not_cleanup, e };
+ent_condition not_entity(entity *e) {
+    return (ent_condition){ &not_entity_compatible, &not_entity_cleanup, e };
+}
+
+void tagged_cleanup(void *data) {
+    free(data);
+}
+
+int tagged_compatible(entity *e, void *data) {
+    int tag = *(int*)(data);
+    return e->tag == tag;
+}
+
+ent_condition tagged(int tag) {
+    int *data = malloc(sizeof(int));
+    *data = tag;
+    
+    return (ent_condition){ &tagged_compatible, &tagged_cleanup, data };
+}
+
+void is_not_cleanup(void *data) {
+    ent_condition c = *(ent_condition*)data;
+    c.cleanup(c.data);
+    free(data);
+}
+
+int is_not_compatible(entity *e, void *data) {
+    ent_condition c = *(ent_condition*)data;
+    
+    return !(c.compatible(e, c.data));
+}
+
+ent_condition is_not(ent_condition c) {
+    ent_condition *data = malloc(sizeof(ent_condition));
+    *data = c;
+    
+    return (ent_condition){ &is_not_compatible, &is_not_cleanup, data };
+}
+
+void with_component_cleanup(void *data) {
+    free(data);
+}
+
+int with_component_compatible(entity *e, void *data) {
+    c_table tocheck = *(c_table*)(data);
+    
+    for(size_t i = 0; i < zsize(e->components); ++i) {
+        if(c_tabl(e->components[i]) == tocheck) return 1;
+    }
+    
+    return 0;
+}
+
+ent_condition with_component(c_table ct) {
+    c_table *data = malloc(sizeof(c_table));
+    *data = ct;
+    
+    return (ent_condition){ &with_component_compatible, &with_component_cleanup, data };
 }

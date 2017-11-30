@@ -6,8 +6,14 @@
 #include "component.h"
 #include "vector.h"
 
+/* UNTAGGED is -1 so that an enum of tags
+ * can be declared and will automatically work correctl
+ */
+#define UNTAGGED -1
+
 typedef struct {
     vec position;
+    int tag;
     zlist_of(component) components;
 } entity;
 
@@ -26,8 +32,11 @@ typedef struct {
     void *data;
 } ent_condition;
 
+ent_condition tagged(int);
+ent_condition with_component(c_table);
 ent_condition within_radius(vec,float);
-ent_condition is_not(entity*);
+ent_condition not_entity(entity*);
+ent_condition is_not(ent_condition);
 
 ent_iterator ent_all_(size_t,...);
 
