@@ -1,4 +1,5 @@
 #include "component.h"
+#include "entity.h"
 
 #include <stdlib.h>
 
@@ -27,10 +28,14 @@ void c_free(component c) {
     free(c_head(c));
 }
 
-void c_update(component c) {
-    c_tabl(c)->update(c);
+void c_draw(component c) {
+    c_tabl(c)->draw(c, c_parent(c));
 }
 
 void c_tick(component c) {
-    c_tabl(c)->tick(c);
+    c_tabl(c)->tick(c, c_parent(c));
+}
+
+entity *c_parent(component c) {
+    return c_tabl(c)->parent;
 }

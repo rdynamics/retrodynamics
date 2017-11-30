@@ -236,3 +236,23 @@ ent_condition with_component(c_table ct) {
     
     return (ent_condition){ &with_component_compatible, &with_component_cleanup, data };
 }
+
+void any_cleanup(void *data) { }
+
+int any_compatible(entity *e, void *data) { return 1; }
+
+ent_condition any(void) {
+    return (ent_condition){ &any_compatible, &any_cleanup, NULL };
+}
+
+component get_component_(entity *e, c_table ct) {
+    for(size_t i = 0; i < zsize(e->components); ++i) {
+        if(c_tabl(e->components[i]) == ct) return e->components[i];
+    }
+    return NULL;
+}
+
+void add_component(entity *e, component c) {
+    zlist_add(e->components, c);
+    c_tabl(c)->parent = e;
+}

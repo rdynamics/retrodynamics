@@ -1,9 +1,23 @@
 #include "graphics.h"
+#include "entity.h"
 
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 
 #include "images_diffuse.h"
+
+declare_draw(sprite_renderer, {
+    if(!self->spr) return;
+    vec position = self->center;
+    if(parent) {
+        position = vadd(position, parent->position);
+    }
+    draw_sprite(self->spr, position.x, position.y);
+})
+
+declare_tick(sprite_renderer, { })
+
+declare_head(sprite_renderer)
 
 color background;
 
@@ -38,7 +52,12 @@ void render() {
     glBindTexture(GL_TEXTURE_2D, spritesheet);
     glColor3f(1.f, 1.f, 1.f);
     
-    draw_sprite(&sprite_brick, 0, 0);
+    //draw_sprite(&sprite_brick, 0, 0);
+    for_ent(e, ent_all(any()), {
+        for(size_t i = 0; i < zsize(e->components); ++i) {
+            c_draw(e->components[i]);
+        }
+    })
 }
 
 void draw_sprite(const sprite *s, float x, float y) {    

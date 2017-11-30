@@ -11,7 +11,7 @@
  */
 #define UNTAGGED -1
 
-typedef struct {
+typedef struct entity {
     vec position;
     int tag;
     zlist_of(component) components;
@@ -32,6 +32,7 @@ typedef struct {
     void *data;
 } ent_condition;
 
+ent_condition any(void);
 ent_condition tagged(int);
 ent_condition with_component(c_table);
 ent_condition within_radius(vec,float);
@@ -39,6 +40,11 @@ ent_condition not_entity(entity*);
 ent_condition is_not(ent_condition);
 
 ent_iterator ent_all_(size_t,...);
+
+#define get_component(e,c) ((c*)get_component_(e,c_type(c)))
+component get_component_(entity*,c_table);
+
+void add_component(entity*,component);
 
 #define ent_all(...) ent_all_(sizeof((ent_condition[]){ __VA_ARGS__ }), __VA_ARGS__)
 
