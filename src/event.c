@@ -34,6 +34,9 @@ void events_save() {
             keyboard[i].is_down = new_key_states[i] - 1;
         }
         new_key_states[i] = 0;
+        if(keyboard[i].is_down) {
+            ++keyboard[i].ticks;
+        } else { keyboard[i].ticks = 0; }
     }
 }
 

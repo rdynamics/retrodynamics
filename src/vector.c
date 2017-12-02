@@ -18,3 +18,8 @@ float cross(vec a, vec b) { return a.x * b.y - a.y * b.x; }
 float len(vec v) { return sqrt(len2(v)); }
 float len2(vec v) { return v.x * v.x + v.y * v.y; }
 
+vec normalize(vec v) {
+    if(v.x || v.y) return vdiv(v, len(v));
+    return v0();
+}
+

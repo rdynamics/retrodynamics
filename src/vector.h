@@ -22,4 +22,6 @@ extern float cross(vec,vec);
 extern float len(vec);
 extern float len2(vec);
 
+extern vec normalize(vec);
+
 #endif
