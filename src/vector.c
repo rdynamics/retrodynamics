@@ -15,6 +15,10 @@ vec vdiv(vec v, float s) { return vxy(v.x / s, v.y / s); }
 float dot(vec a, vec b) { return a.x * b.x + a.y * b.y; }
 float cross(vec a, vec b) { return a.x * b.y - a.y * b.x; }
 
+float vcos(vec a, vec b) {
+	return dot(a, b) / (len(a) * len(b));
+}
+
 float len(vec v) { return sqrt(len2(v)); }
 float len2(vec v) { return v.x * v.x + v.y * v.y; }
 
@@ -23,3 +27,6 @@ vec normalize(vec v) {
     return v0();
 }
 
+vec vsnap(vec v, float step) {
+    return vxy(round(v.x / step) * step, round(v.y / step) * step);
+}

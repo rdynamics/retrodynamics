@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <pthread.h>
+#include <stdlib.h>
 
 #include "loops.h"
 #include "window.h"
@@ -16,6 +17,7 @@ GLFWwindow *main_window;
 
 /* Fifty ticks per second */
 #define TICK_LENGTH 20000000
+#define IDLE_LENGTH 10000000
 
 void *tick_thread(void *args) {
     struct timespec sleep_time = (struct timespec){ 0, 0 };
@@ -67,8 +69,15 @@ void game_begin(const char* title, int viewx, int viewy, float scale) {
     
     pthread_t tick_thread_id;
     pthread_create(&tick_thread_id, NULL, tick_thread, NULL);
+	
+	srand(time(NULL));
+	
+	struct timespec idle_time = (struct timespec) { 0, 0 };
+	
+	clock_t start, end;
     
     for(;;) {
+		start = clock();
         pthread_mutex_lock  (&lock);
         render();
         events_save();
@@ -79,6 +88,15 @@ void game_begin(const char* title, int viewx, int viewy, float scale) {
         
         glfwSwapBuffers(main_window);
         glfwPollEvents();
+		
+		end = clock();
+        
+        int ns = (int)(((float)(end - start) / CLOCKS_PER_SEC) * 1000000000);
+        while(ns > IDLE_LENGTH) ns -= TICK_LENGTH;
+        ns = IDLE_LENGTH - ns;
+        idle_time.tv_nsec = ns;
+        
+        nanosleep(&idle_time, NULL);
     }
     
     window_closed = 1;

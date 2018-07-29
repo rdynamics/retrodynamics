@@ -1,13 +1,33 @@
 #include "entity.h"
 #include "new.h"
 
+#include "memory_tracker.h"
+
 #include <stdarg.h>
+#include <math.h>
 
 zlist_of(entity*) entity_pool;
 
 size_t minimum_empty = 0;
 size_t min = 0;
 size_t max_plus_one = 0;
+int ent_needs_sort = 0;
+
+static int always_compare_true(entity *a, entity *b) { return 0; }
+
+static entity_sort_predicate sort_predicate = always_compare_true;
+
+void ent_set_predicate(entity_sort_predicate p) {
+	if(p) sort_predicate = p;
+}
+
+static int evaluate_predicate(entity *a, entity *b) {
+	if(!a) return 0;
+	if(!b) return 1;
+	if(a->layer > b->layer) return 0;
+	if(b->layer > a->layer) return 1;
+	return sort_predicate(a, b);
+}
 
 void ent_init(void) {
     /* Start the entity pool with 100 entities */
@@ -22,15 +42,27 @@ void ent_cleanup(void) {
         if(entity_pool[i]) {
             zfree(entity_pool[i]->components);
             free(entity_pool[i]);
+			entity_pool[i] = NULL;
         }
     }
+	
+	minimum_empty = 0;
+	min = 0;
+	max_plus_one = 0;
+	ent_needs_sort = 0;
 }
 
-entity *ent_new(void) {
+entity *ent_new(void) {	
     entity *ent = snew(entity);
+    
+    ent_needs_sort = 1;
     
     ent->position = v0();
     ent->tag = UNTAGGED;
+    ent->layer = 0;
+    ent->kill_handler = NULL;
+	ent->fixed = 0;
+	ent->visible = 1;
     zlist_init(ent->components, 0);
     
     for(size_t i = minimum_empty; i < zsize(entity_pool); ++i) {
@@ -51,6 +83,12 @@ entity *ent_new(void) {
 void ent_destroy(entity *e) {
     if(!e) return;
     
+    if(e->kill_handler) {
+		*c_parent_ptr(e->kill_handler) = e;
+        c_tick(e->kill_handler);
+        c_free(e->kill_handler);
+    }
+    
     int is_min = 1;
     
     for(size_t i = 0; i < zsize(entity_pool); ++i) {
@@ -66,6 +104,10 @@ void ent_destroy(entity *e) {
             if(i + 1 == max_plus_one) --max_plus_one;
             break;
         } else if(entity_pool[i]) is_min = 0;
+    }
+    
+    for(size_t i = 0; i < zsize(e->components); ++i) {
+        c_free(e->components[i]);
     }
     
     zfree(e->components);
@@ -151,6 +193,45 @@ ent_iterator ent_all_(size_t len, ...) {
     return (ent_iterator){ &ent_all_next, /*&ent_all_has_next,*/ &ent_all_cleanup, data };
 }
 
+entity *ent_first_(size_t len, ...) {
+    va_list args;
+    va_start(args, len);
+    
+    size_t count = 0;
+    
+    ent_condition *list = malloc(len);
+    while(len) {
+        list[count] = va_arg(args, ent_condition);
+        ++count;
+        len -= sizeof(ent_condition);
+    }
+    
+    size_t i = min;
+    entity *result = NULL;
+    for(;;) {
+        if(entity_pool[i]) {
+            for(size_t j = 0; j < count; ++j) {
+                if(!list[j].compatible(entity_pool[i], list[j].data)) {
+                    goto incompatible;
+                }
+            }
+            result = entity_pool[i];
+            break;
+            incompatible: { }
+        }
+        ++i;
+        if(i == zsize(entity_pool)) break;
+    }
+	
+	for(size_t j = 0; j < count; ++j) {
+		list[j].cleanup(list[j].data);
+	}
+	
+	free(list);
+    
+    return result;
+}
+
 void radius_cleanup(void *data) {
     free(data);
 }
@@ -169,6 +250,82 @@ ent_condition within_radius(vec v, float r) {
     
     return (ent_condition){ &radius_compatible, &radius_cleanup, data };
 }
+
+void x_range_cleanup(void *data) {
+    free(data);
+}
+
+int x_range_compatible(entity *e, void *data) {
+    float p = *(float*)data;
+    float r = ((float*)data)[1];
+    float test = fabs(e->position.x - p);
+    return test < r;
+}
+
+ent_condition within_x_range(float x, float r) {
+    float *data = malloc(2 * sizeof(float));
+    data[0] = x;
+    data[1] = r;
+    
+    return (ent_condition){ &x_range_compatible, &x_range_cleanup, data };
+}
+
+void y_range_cleanup(void *data) {
+    free(data);
+}
+
+int y_range_compatible(entity *e, void *data) {
+    float p = *(float*)data;
+    float r = ((float*)data)[1];
+    float test = fabs(e->position.y - p);
+    return test < r;
+}
+
+ent_condition within_y_range(float y, float r) {
+    float *data = malloc(2 * sizeof(float));
+    data[0] = y;
+    data[1] = r;
+    
+    return (ent_condition){ &y_range_compatible, &y_range_cleanup, data };
+}
+
+void x_bounds_cleanup(void *data) {
+    free(data);
+}
+
+int x_bounds_compatible(entity *e, void *data) {
+    float a = *(float*)data;
+    float b = ((float*)data)[1];
+    return a <= e->position.x && e->position.x <= b;
+}
+
+ent_condition within_x_bounds(float a, float b) {
+    float *data = malloc(2 * sizeof(float));
+    data[0] = a;
+    data[1] = b;
+    
+    return (ent_condition){ &x_bounds_compatible, &x_bounds_cleanup, data };
+}
+
+void y_bounds_cleanup(void *data) {
+    free(data);
+}
+
+int y_bounds_compatible(entity *e, void *data) {
+    float a = *(float*)data;
+    float b = ((float*)data)[1];
+    return a <= e->position.y && e->position.y <= b;
+}
+
+ent_condition within_y_bounds(float a, float b) {
+    float *data = malloc(2 * sizeof(float));
+    data[0] = a;
+    data[1] = b;
+    
+    return (ent_condition){ &y_bounds_compatible, &y_bounds_cleanup, data };
+}
+
+
 
 void not_entity_cleanup(void *data) { }
 
@@ -254,5 +411,80 @@ component get_component_(entity *e, c_table ct) {
 
 void add_component(entity *e, component c) {
     zlist_add(e->components, c);
-    c_tabl(c)->parent = e;
+    *c_parent_ptr(c) = e;
+}
+
+void ent_process() {
+    entity *first = ent_first(any());
+    if(!first) return;
+    
+    int min_layer = first->layer;
+    int max_layer = first->layer;
+	
+    for_ent(e, ent_all(any()), {
+        if(e->layer < min_layer) min_layer = e->layer;
+        if(e->layer > max_layer) max_layer = e->layer;
+        for(size_t i = 0; i < zsize(e->components); ++i) {
+            if(c_tick(e->components[i])) { break; }
+        }
+    })
+	
+	for(int i = 1; i < zsize(entity_pool); ++i) {
+		for(int j = i; j > 0 && evaluate_predicate(entity_pool[j], entity_pool[j - 1]); --j) {
+			entity *tmp = entity_pool[j];
+			entity_pool[j] = entity_pool[j - 1];
+			entity_pool[j - 1] = tmp;
+		}
+	}
+	
+	for(size_t i = 0; i < zsize(entity_pool); ++i) {
+		if(!entity_pool[i]) {
+			max_plus_one = i;
+			minimum_empty = i;
+			break;
+		}
+	}
+	
+	min = 0;
+    
+    /*if(max_layer != min_layer && ent_needs_sort) {
+        int count = max_layer - min_layer + 1;
+        entity ***buckets = malloc(sizeof(entity**) * (count));
+        int *moves = malloc(sizeof(int) * count);
+        for(int i = 0; i < count; ++i) {
+            buckets[i] = malloc(sizeof(entity*) * zsize(entity_pool));
+            moves[i] = 0;
+        }
+        
+        for_ent(e, ent_all(any()), {
+            int layer = e->layer;
+            layer -= min_layer;
+            buckets[layer][moves[layer]] = e;
+            ++moves[layer];
+        })
+        
+        size_t write = 0;
+        
+        for(int i = 0; i < count; ++i) {
+            for(int j = 0; j < moves[i]; ++j) {
+                entity_pool[write] = buckets[i][j];
+                ++write;
+            }
+            free(buckets[i]);
+        }
+        
+        free(moves);
+        free(buckets);
+        
+        min = 0;
+        max_plus_one = write + 1;
+        minimum_empty = write + 1;
+        
+        while(write < zsize(entity_pool)) {
+            entity_pool[write] = NULL;
+            ++write;
+        }
+        
+        ent_needs_sort = 0;
+    }*/
 }

@@ -11,6 +11,14 @@ float button_value(button *b) {
     return 0;
 }
 
+int on_down(button *b) {
+    return b->is_down && !b->was_down;
+}
+
+int on_up(button *b) {
+    return !b->is_down && b->was_down;
+}
+
 axis key_axis(int negative, int positive) {
     return (axis){ get_key(negative), get_key(positive) };
 }

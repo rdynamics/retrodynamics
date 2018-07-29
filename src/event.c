@@ -10,7 +10,7 @@ button *get_key(int which) {
 }
 
 void key_callback(GLFWwindow* w, int key, int scancode, int action, int mods) {
-    if(key >= 0 && key < 500) {
+    if(key >= 0 && key < 498) {
         if(action == GLFW_PRESS) {
             new_key_states[key] = 2;
         }
@@ -20,8 +20,56 @@ void key_callback(GLFWwindow* w, int key, int scancode, int action, int mods) {
     }
 }
 
+vec absolute_cursor;
+
+void cursor_position_callback(GLFWwindow *w, double x, double y) {
+    absolute_cursor = vxy(x, y);
+}
+
+void mouse_button_callback(GLFWwindow *w, int button, int action, int mods) {
+    if(action == GLFW_PRESS) {
+        switch(button) {
+            case GLFW_MOUSE_BUTTON_LEFT:
+                new_key_states[LEFT_MOUSE] = 2;
+                break;
+            case GLFW_MOUSE_BUTTON_MIDDLE:
+                new_key_states[MIDDLE_MOUSE] = 2;
+                break;
+            case GLFW_MOUSE_BUTTON_RIGHT:
+                new_key_states[RIGHT_MOUSE] = 2;
+                break;
+        }
+    }
+    if(action == GLFW_RELEASE) {
+        switch(button) {
+            case GLFW_MOUSE_BUTTON_LEFT:
+                new_key_states[LEFT_MOUSE] = 1;
+                break;
+            case GLFW_MOUSE_BUTTON_MIDDLE:
+                new_key_states[MIDDLE_MOUSE] = 1;
+                break;
+            case GLFW_MOUSE_BUTTON_RIGHT:
+                new_key_states[RIGHT_MOUSE] = 1;
+                break;
+        }
+    }
+}
+
+static vec scroll;
+
+vec get_scroll() {
+	return scroll;
+}
+
+void scroll_callback(GLFWwindow *window, double x, double y) {
+	scroll = vxy(x, y);
+}
+
 void events_attach(GLFWwindow* w) {
     glfwSetKeyCallback(w, key_callback);
+    glfwSetCursorPosCallback(w, cursor_position_callback);
+    glfwSetMouseButtonCallback(w, mouse_button_callback);
+	glfwSetScrollCallback(w, scroll_callback);
     
     for(size_t i = 0; i < 500; ++i) {
         keyboard[i].is_down = keyboard[i].was_down = new_key_states[i] = 0;
@@ -44,4 +92,5 @@ void events_clear() {
     for(size_t i = 0; i < 500; ++i) {
         keyboard[i].was_down = keyboard[i].is_down;
     }
+	scroll = v0();
 }

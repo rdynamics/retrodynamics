@@ -19,9 +19,13 @@ extern vec vdiv(vec,float);
 extern float dot(vec,vec);
 extern float cross(vec,vec);
 
+extern float vcos(vec, vec);
+
 extern float len(vec);
 extern float len2(vec);
 
 extern vec normalize(vec);
+
+extern vec vsnap(vec,float);
 
 #endif

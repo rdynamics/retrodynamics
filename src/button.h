@@ -3,6 +3,13 @@
 
 #include "vector.h"
 
+vec screen_cursor();
+vec world_cursor();
+
+#define LEFT_MOUSE 497
+#define MIDDLE_MOUSE 498
+#define RIGHT_MOUSE 499
+
 typedef struct {
     int is_down;
     int was_down;
@@ -10,6 +17,11 @@ typedef struct {
 } button;
 
 button *get_key(int);
+
+int on_down(button*);
+int on_up(button*);
+
+vec get_scroll();
 
 float button_value(button*);
 
